@@ -18,6 +18,7 @@ import pt.webdetails.cpf.repository.api.FileAccess;
 import pt.webdetails.cpf.repository.api.IBasicFile;
 import pt.webdetails.cpf.repository.api.IBasicFileFilter;
 import pt.webdetails.cpf.repository.api.IReadAccess;
+import pt.webdetails.cpf.repository.api.IRWAccess;
 import pt.webdetails.cpf.repository.api.IUserContentAccess;
 
 import java.io.IOException;
@@ -34,39 +35,56 @@ import java.util.List;
 public final class UserContentAccess implements IUserContentAccess {
   private static final Log logger = LogFactory.getLog( UserContentAccess.class );
   private IReadAccess readAccess;
+  private IRWAccess readWriteAccess;
 
-  public UserContentAccess( IReadAccess readAccess ) {
+  public UserContentAccess( IReadAccess readAccess, IRWAccess readWriteAcess ) {
     this.readAccess = readAccess;
+    this.readWriteAccess = readWriteAcess;
   }
 
   @Override
   public boolean saveFile( String path, InputStream contents ) {
-    logger.fatal( "Not implemented for the OSGi environment" );
-    return false;
+    if ( readWriteAccess == null ) {
+      logger.fatal("Not implemented for the OSGi environment");
+      return false;
+    }
+    return readWriteAccess.saveFile( path, contents );
   }
 
   @Override
   public boolean copyFile( String pathFrom, String pathTo ) {
-    logger.fatal( "Not implemented for the OSGi environment" );
-    return false;
+    if ( readWriteAccess == null ) {
+      logger.fatal("Not implemented for the OSGi environment");
+      return false;
+    }
+    return readWriteAccess.copyFile( pathFrom, pathTo );
   }
 
   @Override
   public boolean deleteFile( String path ) {
-    logger.fatal( "Not implemented for the OSGi environment" );
-    return false;
+    if ( readWriteAccess == null ) {
+      logger.fatal("Not implemented for the OSGi environment");
+      return false;
+    }
+    return readWriteAccess.deleteFile( path );
   }
 
   @Override
   public boolean createFolder( String path ) {
-    logger.fatal( "Not implemented for the OSGi environment" );
-    return false;
+    if ( readWriteAccess == null ) {
+      logger.fatal("Not implemented for the OSGi environment");
+      return false;
+    }
+    return readWriteAccess.createFolder( path );
   }
 
   @Override
   public boolean createFolder( String path, boolean isHidden ) {
-    logger.fatal( "Not implemented for the OSGi environment" );
-    return false;
+    if ( readWriteAccess == null ) {
+      logger.fatal("Not implemented for the OSGi environment");
+      return false;
+    }
+    return readWriteAccess.createFolder( path, isHidden );
   }
 
   @Override

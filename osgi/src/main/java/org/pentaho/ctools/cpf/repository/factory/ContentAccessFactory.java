@@ -39,6 +39,7 @@ import pt.webdetails.cpf.repository.api.IUserContentAccess;
 public final class ContentAccessFactory implements IContentAccessFactory {
   private static final Log logger = LogFactory.getLog( ContentAccessFactory.class );
   private List<IReadAccess> readAccesses = new ArrayList<>();
+  private IRWAccess readWriteAccess = null;
 
   public void addReadAccess( IReadAccess readAccess ) {
     this.readAccesses.add( readAccess );
@@ -47,9 +48,17 @@ public final class ContentAccessFactory implements IContentAccessFactory {
     this.readAccesses.remove( readAccess );
   }
 
+  public void setReadWriteAccess( IRWAccess readWriteAccess ) {
+    this.readWriteAccess = readWriteAccess;
+  }
+  public void removeReadWriteAccess( IRWAccess readWriteAccess ) {
+    this.readWriteAccess = null;
+  }
+
   @Override
-  public IUserContentAccess getUserContentAccess( String path ) { IReadAccess readAccess = this.getReadAccessProxy( path );
-    return new UserContentAccess( readAccess );
+  public IUserContentAccess getUserContentAccess( String path ) {
+    IReadAccess readAccess = this.getReadAccessProxy( path );
+    return new UserContentAccess( readAccess, readWriteAccess );
   }
 
   @Override
