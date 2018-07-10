@@ -48,8 +48,7 @@ public final class ContentAccessFactory implements IContentAccessFactory {
   }
 
   @Override
-  public IUserContentAccess getUserContentAccess( String path ) {
-    IReadAccess readAccess = this.getReadAccessProxy( path );
+  public IUserContentAccess getUserContentAccess( String path ) { IReadAccess readAccess = this.getReadAccessProxy( path );
     return new UserContentAccess( readAccess );
   }
 
