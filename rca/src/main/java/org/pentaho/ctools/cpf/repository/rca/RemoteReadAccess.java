@@ -19,6 +19,7 @@ public class RemoteReadAccess implements IReadAccess {
   Client client;
 
   static final String reposURL = "http://localhost:8080/pentaho";
+  static private final String DEFAULT_PATH_SEPARATOR = "/";
 
   public RemoteReadAccess() {
     client = ClientBuilder.newClient().register(new HttpBasicAuthFilter("admin", "password"));
@@ -83,6 +84,7 @@ public class RemoteReadAccess implements IReadAccess {
   }
 
   static String createRequestURL(String path, String method) {
-    return path.startsWith("/") ? reposURL + "/api/repo/files" + path + "/" + method : reposURL + "/api/repo/files/" + path + "/" + method;
+    path = path.startsWith(DEFAULT_PATH_SEPARATOR) ? path : DEFAULT_PATH_SEPARATOR + path;
+    return reposURL + "/api/repo/files" + path + DEFAULT_PATH_SEPARATOR + method;
   }
 }
