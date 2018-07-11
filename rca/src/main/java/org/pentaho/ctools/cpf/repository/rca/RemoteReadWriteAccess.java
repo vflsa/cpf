@@ -18,6 +18,10 @@ import java.util.ArrayList;
 public class RemoteReadWriteAccess extends RemoteReadAccess implements IRWAccess {
   private static final Log logger = LogFactory.getLog( RemoteReadWriteAccess.class );
 
+  public RemoteReadWriteAccess(String reposURL) {
+    super(reposURL);
+  }
+
   @Override
   public boolean saveFile(String path, InputStream contents) {
     String requestURL = createRequestURL( path, null);
@@ -104,4 +108,15 @@ public class RemoteReadWriteAccess extends RemoteReadAccess implements IRWAccess
     if ( properties == null ) return null; //TODO: exception? log?
     return properties.getId();
   }
+
+  /*
+  // TESTE DEBUG!!!
+  @Override
+  public boolean fileExists(String path) {
+    //createFolder("/home/admin/cpf/newfolder", true);
+    //deleteFile("/home/admin/cpf/index.html");
+    //copyFile("/home/admin/cpf/index.html", "/home/admin/cpf/copy.html");
+    return super.fileExists(path);
+  }
+  */
 }

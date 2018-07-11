@@ -18,17 +18,22 @@ import java.util.stream.Collectors;
 public class RemoteReadAccess implements IReadAccess {
   Client client;
 
-  static final String reposURL = "http://localhost:8080/pentaho";
+  String reposURL;
   static private final String DEFAULT_PATH_SEPARATOR = "/";
 
-  public RemoteReadAccess() {
+  public RemoteReadAccess(String reposURL) {
+    this.reposURL = reposURL;
     client = ClientBuilder.newClient().register(new HttpBasicAuthFilter("admin", "password"));
   }
 
   @Override
   public InputStream getFileInputStream(String path) throws IOException {
-    IBasicFile file = fetchFile(path);
-    return file.getContents();
+    String requestURL = createRequestURL(path, "");
+    InputStream responseData = client.target(requestURL)
+        .request(MediaType.APPLICATION_OCTET_STREAM_TYPE)
+        .get(InputStream.class);
+
+    return responseData;
   }
 
   @Override
@@ -56,7 +61,7 @@ public class RemoteReadAccess implements IReadAccess {
         .request(MediaType.APPLICATION_XML)
         .get(new GenericType<List<RepositoryFileDto>>(){});
     if (response == null) return null;
-    return response.stream().map(dto -> new RemoteBasicFile(client, dto)).collect(Collectors.toList());
+    return response.stream().map(dto -> new RemoteBasicFile(this, dto)).collect(Collectors.toList());
   }
 
   @Override
@@ -80,18 +85,18 @@ public class RemoteReadAccess implements IReadAccess {
     RepositoryFileDto response = client.target(requestURL)
         .request(MediaType.APPLICATION_XML)
         .get(RepositoryFileDto.class);
-    return new RemoteBasicFile(client, response);
+    return new RemoteBasicFile(this, response);
   }
 
   static String encodePath(String path) {
     return path.replaceAll("/", ":");
   }
 
-  static String createRequestURL(String path, String method) {
+  String createRequestURL(String path, String method) {
     return createRequestURL("/api/repo/files/", path, method);
   }
 
-  static String createRequestURL(String endpoint, String path, String method) {
+  String createRequestURL(String endpoint, String path, String method) {
     if ( method != null )
       return reposURL + endpoint + encodePath(path) + DEFAULT_PATH_SEPARATOR + method;
     return reposURL + endpoint + encodePath(path);

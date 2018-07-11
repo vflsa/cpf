@@ -2,30 +2,23 @@ package org.pentaho.ctools.cpf.repository.rca;
 
 import org.pentaho.ctools.cpf.repository.rca.dto.RepositoryFileDto;
 import pt.webdetails.cpf.repository.api.IBasicFile;
+import pt.webdetails.cpf.repository.api.IReadAccess;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.io.InputStream;
 
 public class RemoteBasicFile implements IBasicFile {
-  Client client;
+  IReadAccess remote;
   RepositoryFileDto repositoryFile;
 
-  public RemoteBasicFile(Client client, RepositoryFileDto dto) {
-    this.client = client;
+  public RemoteBasicFile(IReadAccess remote, RepositoryFileDto dto) {
+    this.remote = remote;
     repositoryFile = dto;
   }
 
   @Override
   public InputStream getContents() throws IOException {
-    String requestURL = RemoteReadAccess.createRequestURL(repositoryFile.getPath(), "");
-    InputStream responseData = client.target(requestURL)
-        .request(MediaType.APPLICATION_OCTET_STREAM_TYPE)
-        .get(InputStream.class);
-
-    return responseData;
+    return remote.getFileInputStream(repositoryFile.getPath());
   }
 
   @Override
