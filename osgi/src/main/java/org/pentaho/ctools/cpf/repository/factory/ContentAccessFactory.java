@@ -17,6 +17,7 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.pentaho.ctools.cpf.repository.bundle.DummyReadWriteAccess;
 import org.pentaho.ctools.cpf.repository.bundle.ReadAccessProxy;
 import org.pentaho.ctools.cpf.repository.bundle.UserContentAccess;
 import pt.webdetails.cpf.repository.api.IContentAccessFactory;
@@ -79,8 +80,9 @@ public final class ContentAccessFactory implements IContentAccessFactory {
 
   @Override
   public IRWAccess getPluginSystemWriter( String basePath ) {
-    logger.fatal( "Not implemented for the OSGi environment" );
-    return null;
+    //logger.fatal( "Not implemented for the OSGi environment" );
+    logger.info( "Using dummy writer for the OSGi environment" );
+    return new DummyReadWriteAccess( this.getReadAccessProxy( basePath ) );
   }
 
   @Override
