@@ -83,8 +83,17 @@ public class RemoteReadAccess implements IReadAccess {
     return new RemoteBasicFile(client, response);
   }
 
+  static String encodePath(String path) {
+    return path.replaceAll("/", ":");
+  }
+
   static String createRequestURL(String path, String method) {
-    path = path.startsWith(DEFAULT_PATH_SEPARATOR) ? path : DEFAULT_PATH_SEPARATOR + path;
-    return reposURL + "/api/repo/files" + path + DEFAULT_PATH_SEPARATOR + method;
+    return createRequestURL("/api/repo/files/", path, method);
+  }
+
+  static String createRequestURL(String endpoint, String path, String method) {
+    if ( method != null )
+      return reposURL + endpoint + encodePath(path) + DEFAULT_PATH_SEPARATOR + method;
+    return reposURL + endpoint + encodePath(path);
   }
 }
