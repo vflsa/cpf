@@ -14,6 +14,11 @@ package org.pentaho.ctools.cpf.repository.rca;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+/*
+import org.glassfish.jersey.media.multipart.FormDataMultiPart;
+import org.glassfish.jersey.media.multipart.MultiPart;
+import org.glassfish.jersey.media.multipart.MultiPartFeature;
+*/
 import org.pentaho.ctools.cpf.repository.rca.dto.RepositoryFileDto;
 import org.pentaho.ctools.cpf.repository.rca.dto.StringKeyStringValueDto;
 import pt.webdetails.cpf.repository.api.IRWAccess;
@@ -22,6 +27,7 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -35,15 +41,26 @@ public class RemoteReadWriteAccess extends RemoteReadAccess implements IRWAccess
   }
 
   @Override
-  public boolean saveFile(String path, InputStream contents) {
-    String requestURL = createRequestURL( path, null);
+  public boolean saveFile( String path, InputStream contents ) {
+    // this endpoint requires a different encoding for paths
+    /*
+    String encodedPath = path.replaceAll( "/", "%2F" );
+    String requestURL = reposURL + "/api/repo/publish/file";
 
-    Response response = client.target(requestURL)
-        .request(MediaType.APPLICATION_OCTET_STREAM)
-        .put(Entity.entity(contents, MediaType.APPLICATION_OCTET_STREAM));
+    FormDataMultiPart form = new FormDataMultiPart();
+    form.field( "importPath", encodedPath );
+    form.field( "fileUpload", contents, MediaType.APPLICATION_OCTET_STREAM_TYPE );
+    form.field( "overwriteFile", "true" );
+
+    Response response = client.register(MultiPartFeature.class)
+        .target( requestURL )
+        .request(MediaType.MULTIPART_FORM_DATA)
+        .post(Entity.entity((MultiPart) form, MediaType.MULTIPART_FORM_DATA_TYPE), Response.class);
 
     //TODO: handle non-OK status codes? log? exception?
     return response.getStatus() == Response.Status.OK.getStatusCode();
+    */
+    return false;
   }
 
   @Override
@@ -121,14 +138,19 @@ public class RemoteReadWriteAccess extends RemoteReadAccess implements IRWAccess
     return properties.getId();
   }
 
-  /*
   // TESTE DEBUG!!!
   @Override
   public boolean fileExists(String path) {
     //createFolder("/home/admin/cpf/newfolder", true);
     //deleteFile("/home/admin/cpf/index.html");
     //copyFile("/home/admin/cpf/index.html", "/home/admin/cpf/copy.html");
+    try {
+      FileInputStream inputStream = new FileInputStream("C:\\Users\\amartins\\Documents\\sprint_work\\BACKLOG-24375\\teste\\index.html");
+      saveFile("/home/admin/cpf/copy.html", inputStream);
+    } catch ( IOException ex ) {
+      System.out.println(ex.getStackTrace());
+    }
     return super.fileExists(path);
   }
-  */
+
 }

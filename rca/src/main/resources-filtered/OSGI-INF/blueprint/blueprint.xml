@@ -7,7 +7,7 @@
 
     <!-- Load system property -->
     <ext:property-placeholder />
-
+<!--
   <bean id="remoteReadAccess" class="org.pentaho.ctools.cpf.repository.rca.RemoteReadAccess">
         <argument value="${repos.url}"/>
   </bean>
@@ -17,10 +17,10 @@
           <argument value="${repos.url}"/>
   </bean>
   <service interface="pt.webdetails.cpf.repository.api.IRWAccess" ref="remoteReadWriteAccess"/>
-<!--
+-->
   <bean id="remoteReadWriteAccess" class="org.pentaho.ctools.cpf.repository.rca.RemoteReadWriteAccess">
       <argument value="${repos.url}"/>
   </bean>
   <service interface="pt.webdetails.cpf.repository.api.IReadAccess" ref="remoteReadWriteAccess"/>
--->
+
 </blueprint>

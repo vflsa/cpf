@@ -45,7 +45,7 @@ public class RemoteBasicFile implements IBasicFile {
 
   @Override
   public String getFullPath() {
-    return repositoryFile.getPath();
+    return repositoryFile.getPath(); // TODO: validate, do we need to append some basePath from UserContentAccess?
   }
 
   @Override

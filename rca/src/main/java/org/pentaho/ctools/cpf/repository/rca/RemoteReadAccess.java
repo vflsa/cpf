@@ -12,7 +12,7 @@
  */
 package org.pentaho.ctools.cpf.repository.rca;
 
-import org.glassfish.jersey.client.filter.HttpBasicAuthFilter;
+//import org.glassfish.jersey.client.filter.HttpBasicAuthFilter;
 import org.pentaho.ctools.cpf.repository.rca.dto.RepositoryFileDto;
 import org.pentaho.ctools.cpf.repository.rca.dto.RepositoryFileTreeDto;
 import pt.webdetails.cpf.repository.api.IBasicFile;
@@ -21,11 +21,15 @@ import pt.webdetails.cpf.repository.api.IReadAccess;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 
 /**
@@ -41,7 +45,22 @@ public class RemoteReadAccess implements IReadAccess {
 
   public RemoteReadAccess( String reposURL ) {
     this.reposURL = reposURL;
-    client = ClientBuilder.newClient().register( new HttpBasicAuthFilter( "admin", "password" ) );
+    client = ClientBuilder.newClient().register((ClientRequestFilter) requestContext -> {
+      String username = "admin";
+      String password = "password";
+      byte[] passwordBytes = password.getBytes();
+
+      Charset CHARACTER_SET = Charset.forName("iso-8859-1");
+      final byte[] prefix = (username + ":").getBytes(CHARACTER_SET);
+      final byte[] usernamePassword = new byte[prefix.length + passwordBytes.length];
+
+      System.arraycopy(prefix, 0, usernamePassword, 0, prefix.length);
+      System.arraycopy(passwordBytes, 0, usernamePassword, prefix.length, passwordBytes.length);
+
+      String authentication = "Basic " + new String(Base64.getEncoder().encode(usernamePassword), "ASCII");
+      requestContext.getHeaders().add(HttpHeaders.AUTHORIZATION, authentication);
+
+    });
   }
 
   @Override
@@ -69,6 +88,10 @@ public class RemoteReadAccess implements IReadAccess {
     RepositoryFileDto response = client.target( requestURL )
         .request( MediaType.APPLICATION_XML )
         .get( RepositoryFileDto.class );
+
+    if ( response == null) {
+      return 0L;
+    }
     return response.getLastModifiedDate().getTime();
   }
 
