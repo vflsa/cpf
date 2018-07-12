@@ -92,8 +92,9 @@ public final class ContentAccessFactory implements IContentAccessFactory {
 
   @Override
   public IRWAccess getOtherPluginSystemWriter( String pluginId, String basePath ) {
-    logger.fatal( "Not implemented for the OSGi environment" );
-    return null;
+    //logger.fatal( "Not implemented for the OSGi environment" );
+    logger.info( "Using dummy writer for the OSGi environment" );
+    return new DummyReadWriteAccess( this.getReadAccessProxy( basePath ) );
   }
 
   private IReadAccess getReadAccessProxy( String path ) {
