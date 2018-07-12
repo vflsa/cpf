@@ -26,9 +26,10 @@ import java.io.InputStream;
 import java.util.List;
 
 /**
- * Allows users to access the content of the available bundle resources in an OSGi environment.
- * Note: Write operations are currently not supported and there are no permission distinctions between
- * different users.
+ * Allows users to access the content of the available bundle resources in an OSGi environment (or other providers).
+ * Write operations are supported only if a {@code IRWAccess} is supplied.
+ *
+ * Note: There are no permission distinctions between different users.
  *
  * @see IUserContentAccess
  */
@@ -37,9 +38,9 @@ public final class UserContentAccess implements IUserContentAccess {
   private IReadAccess readAccess;
   private IRWAccess readWriteAccess;
 
-  public UserContentAccess( IReadAccess readAccess, IRWAccess readWriteAcess ) {
+  public UserContentAccess( IReadAccess readAccess, IRWAccess readWriteAccess ) {
     this.readAccess = readAccess;
-    this.readWriteAccess = readWriteAcess;
+    this.readWriteAccess = readWriteAccess;
   }
 
   @Override

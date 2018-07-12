@@ -19,6 +19,11 @@ import pt.webdetails.cpf.repository.api.IReadAccess;
 import java.io.IOException;
 import java.io.InputStream;
 
+/**
+ * Class {@code RemoteBasicFile} implements the {@code IBasicFile} interface for a remote repository file.
+ *
+ * @see IBasicFile
+ */
 public class RemoteBasicFile implements IBasicFile {
   IReadAccess remote;
   RepositoryFileDto repositoryFile;

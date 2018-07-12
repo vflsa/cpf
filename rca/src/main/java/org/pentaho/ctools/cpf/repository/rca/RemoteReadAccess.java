@@ -27,90 +27,104 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Class {@code RemoteReadAccess} provides an implementation of {@code IReadAccess} via REST calls to the Pentaho Server.
+ *
+ * @see IReadAccess
+ */
 public class RemoteReadAccess implements IReadAccess {
   Client client;
 
   String reposURL;
-  static private final String DEFAULT_PATH_SEPARATOR = "/";
+  private static final String DEFAULT_PATH_SEPARATOR = "/";
 
-  public RemoteReadAccess(String reposURL) {
+  public RemoteReadAccess( String reposURL ) {
     this.reposURL = reposURL;
-    client = ClientBuilder.newClient().register(new HttpBasicAuthFilter("admin", "password"));
+    client = ClientBuilder.newClient().register( new HttpBasicAuthFilter( "admin", "password" ) );
   }
 
   @Override
-  public InputStream getFileInputStream(String path) throws IOException {
-    String requestURL = createRequestURL(path, "");
-    InputStream responseData = client.target(requestURL)
-        .request(MediaType.APPLICATION_OCTET_STREAM_TYPE)
-        .get(InputStream.class);
+  public InputStream getFileInputStream( String path ) throws IOException {
+    String requestURL = createRequestURL( path, "" );
+    InputStream responseData = client.target( requestURL )
+        .request( MediaType.APPLICATION_OCTET_STREAM_TYPE )
+        .get( InputStream.class );
 
     return responseData;
   }
 
   @Override
-  public boolean fileExists(String path) {
-    String requestURL = createRequestURL(path, "properties");
-    RepositoryFileDto response = client.target(requestURL)
-        .request(MediaType.APPLICATION_XML)
-        .get(RepositoryFileDto.class);
+  public boolean fileExists( String path ) {
+    String requestURL = createRequestURL( path, "properties" );
+    RepositoryFileDto response = client.target( requestURL )
+        .request( MediaType.APPLICATION_XML )
+        .get( RepositoryFileDto.class );
     return response != null;
   }
 
   @Override
-  public long getLastModified(String path) {
-    String requestURL = createRequestURL(path, "properties");
-    RepositoryFileDto response = client.target(requestURL)
-        .request(MediaType.APPLICATION_XML)
-        .get(RepositoryFileDto.class);
+  public long getLastModified( String path ) {
+    String requestURL = createRequestURL( path, "properties" );
+    RepositoryFileDto response = client.target( requestURL )
+        .request( MediaType.APPLICATION_XML )
+        .get( RepositoryFileDto.class );
     return response.getLastModifiedDate().getTime();
   }
 
   @Override
-  public List<IBasicFile> listFiles(String path, IBasicFileFilter filter, int maxDepth, boolean includeDirs, boolean showHiddenFilesAndFolders) {
-    String requestURL = createRequestURL(path, "children");
-    List<RepositoryFileDto> response = client.target(requestURL)
-        .request(MediaType.APPLICATION_XML)
-        .get(new GenericType<List<RepositoryFileDto>>(){});
-    if (response == null) return null;
-    return response.stream().map(dto -> new RemoteBasicFile(this, dto)).collect(Collectors.toList());
+  public List<IBasicFile> listFiles( String path, IBasicFileFilter filter, int maxDepth, boolean includeDirs, boolean showHiddenFilesAndFolders ) {
+    String requestURL = createRequestURL( path, "children" );
+    List<RepositoryFileDto> response = client.target( requestURL )
+        .request( MediaType.APPLICATION_XML )
+        .get( new GenericType<List<RepositoryFileDto>>() { } );
+    if ( response == null ) {
+      return null;
+    }
+
+    return response
+        .stream()
+        .filter( dto -> ( includeDirs || !dto.isFolder() ) && ( showHiddenFilesAndFolders || !dto.isHidden() ) )
+        .map( dto -> new RemoteBasicFile( this, dto ) )
+        .filter( filter::accept )
+        .collect( Collectors.toList() );
   }
 
   @Override
-  public List<IBasicFile> listFiles(String path, IBasicFileFilter filter, int maxDepth, boolean includeDirs) {
+  public List<IBasicFile> listFiles( String path, IBasicFileFilter filter, int maxDepth, boolean includeDirs ) {
     return listFiles( path, filter, maxDepth, includeDirs, false );
   }
 
   @Override
-  public List<IBasicFile> listFiles(String path, IBasicFileFilter filter, int maxDepth) {
+  public List<IBasicFile> listFiles( String path, IBasicFileFilter filter, int maxDepth ) {
     return listFiles( path, filter, maxDepth, false );
   }
 
   @Override
-  public List<IBasicFile> listFiles(String path, IBasicFileFilter filter) {
+  public List<IBasicFile> listFiles( String path, IBasicFileFilter filter ) {
     return listFiles( path, filter, -1 );
   }
 
   @Override
-  public IBasicFile fetchFile(String path) {
-    String requestURL = createRequestURL(path, "properties");
-    RepositoryFileDto response = client.target(requestURL)
-        .request(MediaType.APPLICATION_XML)
-        .get(RepositoryFileDto.class);
-    return new RemoteBasicFile(this, response);
+  public IBasicFile fetchFile( String path ) {
+    String requestURL = createRequestURL( path, "properties" );
+    RepositoryFileDto response = client.target( requestURL )
+        .request( MediaType.APPLICATION_XML )
+        .get( RepositoryFileDto.class );
+    return new RemoteBasicFile( this, response );
   }
 
-  static String encodePath(String path) {
-    return path.replaceAll("/", ":");
+  static String encodePath( String path ) {
+    return path.replaceAll( "/", ":" );
   }
 
-  String createRequestURL(String path, String method) {
-    return createRequestURL("/api/repo/files/", path, method);
+  String createRequestURL( String path, String method ) {
+    return createRequestURL( "/api/repo/files/", path, method );
   }
 
-  String createRequestURL(String endpoint, String path, String method) {
-    if ( method != null )
-      return reposURL + endpoint + encodePath(path) + DEFAULT_PATH_SEPARATOR + method;
-    return reposURL + endpoint + encodePath(path);
+  String createRequestURL( String endpoint, String path, String method ) {
+    if ( method != null ) {
+      return reposURL + endpoint + encodePath( path ) + DEFAULT_PATH_SEPARATOR + method;
+    }
+    return reposURL + endpoint + encodePath( path );
   }
 }

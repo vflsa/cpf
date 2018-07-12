@@ -24,6 +24,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
+/**
+ * Class {@code DummyReadWriteAccess} provides a wrapper around an {@code IReadAccess} provider that fakes the {@code IRWAccess} operations
+ * by simply replying true without actually doing anything. Read operations are forwarded to the wrapped
+ * {@code IReadAccess} instance.
+ *
+ * @see IReadAccess
+ * @see IRWAccess
+ */
 public class DummyReadWriteAccess implements IReadAccess, IRWAccess {
   IReadAccess readAccess;
   private static final Log logger = LogFactory.getLog( ContentAccessFactory.class );
@@ -52,13 +60,13 @@ public class DummyReadWriteAccess implements IReadAccess, IRWAccess {
 
   @Override
   public boolean createFolder(String path) {
-    logger.info( "faked createFile for the OSGi environment" );
+    logger.info( "faked createFolder for the OSGi environment" );
     return true;
   }
 
   @Override
   public boolean createFolder(String path, boolean isHidden) {
-    logger.info( "faked createFile for the OSGi environment" );
+    logger.info( "faked createFolder for the OSGi environment" );
     return true;
   }
 

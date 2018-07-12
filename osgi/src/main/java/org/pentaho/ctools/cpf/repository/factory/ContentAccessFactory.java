@@ -30,7 +30,14 @@ import pt.webdetails.cpf.repository.api.IUserContentAccess;
  * These access providers are instances of {@code ReadAccessProxy} that contain a reference to an internal dynamic list
  * of available {@code IReadAccess} services that allow access to the available resources.
  *
- * Note: Write access providers are currently not supported.
+ * Additionally, user content (@code IUserContentAccess) can also use a single dynamic instance of a {@code IRWAccess}
+ * service to provide write operations.
+ *
+ * Note: To facilitate operations by CDE Editor, a dummy instance is returned from {@code getPluginSystemWriter} and
+ * {@code getOtherPluginSystemWriter} that fakes write operations and forwards read operations to an instance of
+ * {@code ReadAccessProxy}.
+ *
+ * Note: PluginRepository write access is currently not supported.
  *
  * @see IContentAccessFactory
  * @see IUserContentAccess
@@ -80,7 +87,6 @@ public final class ContentAccessFactory implements IContentAccessFactory {
 
   @Override
   public IRWAccess getPluginSystemWriter( String basePath ) {
-    //logger.fatal( "Not implemented for the OSGi environment" );
     logger.info( "Using dummy writer for the OSGi environment" );
     return new DummyReadWriteAccess( this.getReadAccessProxy( basePath ) );
   }
@@ -92,7 +98,6 @@ public final class ContentAccessFactory implements IContentAccessFactory {
 
   @Override
   public IRWAccess getOtherPluginSystemWriter( String pluginId, String basePath ) {
-    //logger.fatal( "Not implemented for the OSGi environment" );
     logger.info( "Using dummy writer for the OSGi environment" );
     return new DummyReadWriteAccess( this.getReadAccessProxy( basePath ) );
   }
