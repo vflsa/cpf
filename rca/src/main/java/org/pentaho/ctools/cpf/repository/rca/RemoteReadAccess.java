@@ -14,18 +14,19 @@ package org.pentaho.ctools.cpf.repository.rca;
 
 import org.glassfish.jersey.client.filter.HttpBasicAuthFilter;
 import org.pentaho.ctools.cpf.repository.rca.dto.RepositoryFileDto;
+import org.pentaho.ctools.cpf.repository.rca.dto.RepositoryFileTreeDto;
 import pt.webdetails.cpf.repository.api.IBasicFile;
 import pt.webdetails.cpf.repository.api.IBasicFileFilter;
 import pt.webdetails.cpf.repository.api.IReadAccess;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.core.GenericType;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Class {@code RemoteReadAccess} provides an implementation of {@code IReadAccess} via REST calls to the Pentaho Server.
@@ -73,20 +74,32 @@ public class RemoteReadAccess implements IReadAccess {
 
   @Override
   public List<IBasicFile> listFiles( String path, IBasicFileFilter filter, int maxDepth, boolean includeDirs, boolean showHiddenFilesAndFolders ) {
-    String requestURL = createRequestURL( path, "children" );
-    List<RepositoryFileDto> response = client.target( requestURL )
-        .request( MediaType.APPLICATION_XML )
-        .get( new GenericType<List<RepositoryFileDto>>() { } );
+    String requestURL = createRequestURL( path, "tree" );
+
+    WebTarget target = client.target( requestURL );
+
+    // apply query params
+    target = target.queryParam( "showHidden", showHiddenFilesAndFolders );
+
+    if ( maxDepth >= 0 ) {
+      target = target.queryParam("depth", maxDepth );
+    }
+    // TODO: legacy filters on the "tree" endpoint do not appear to work as expected
+    //       for now, we're going to do the filtering locally.
+    /*
+    if ( !includeDirs ) {
+      target = target.queryParam( "filter", "*|FILES" );
+    }
+    */
+
+    // GET
+    RepositoryFileTreeDto response = target.request( MediaType.APPLICATION_XML ).get( RepositoryFileTreeDto.class );
+
     if ( response == null ) {
       return null;
     }
 
-    return response
-        .stream()
-        .filter( dto -> ( includeDirs || !dto.isFolder() ) && ( showHiddenFilesAndFolders || !dto.isHidden() ) )
-        .map( dto -> new RemoteBasicFile( this, dto ) )
-        .filter( filter::accept )
-        .collect( Collectors.toList() );
+    return treeFlatten( response, includeDirs, filter );
   }
 
   @Override
@@ -126,5 +139,23 @@ public class RemoteReadAccess implements IReadAccess {
       return reposURL + endpoint + encodePath( path ) + DEFAULT_PATH_SEPARATOR + method;
     }
     return reposURL + endpoint + encodePath( path );
+  }
+
+  private void treeFlattenRecursive( RepositoryFileTreeDto node, boolean includeDirs, IBasicFileFilter filter, List<IBasicFile> result ) {
+    IBasicFile file = new RemoteBasicFile( this, node.getFile() );
+
+    if ( ( includeDirs || !file.isDirectory() ) && ( filter == null || filter.accept( file ) ) ) {
+      result.add(file);
+    }
+
+    for ( RepositoryFileTreeDto child : node.getChildren() ) {
+      treeFlattenRecursive( child, includeDirs, filter, result );
+    }
+  }
+
+  List<IBasicFile> treeFlatten( RepositoryFileTreeDto tree, boolean includeDirs, IBasicFileFilter filter ) {
+    List<IBasicFile> flatList = new ArrayList<>();
+    treeFlattenRecursive( tree, includeDirs, filter, flatList );
+    return flatList;
   }
 }
