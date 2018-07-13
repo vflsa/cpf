@@ -60,6 +60,15 @@ public class RemoteReadAccess implements IReadAccess {
       String authentication = "Basic " + new String(Base64.getEncoder().encode(usernamePassword), "ASCII");
       requestContext.getHeaders().add(HttpHeaders.AUTHORIZATION, authentication);
 
+      // fix boundary
+      /*
+      List<Object> headers = requestContext.getHeaders().get(HttpHeaders.CONTENT_TYPE);
+      String first = (String) headers.get(0);
+      if ( first != null && first.contains("multipart/form-data;boundary=") ) {
+        requestContext.getHeaders().remove(HttpHeaders.CONTENT_TYPE);
+        requestContext.getHeaders().add(HttpHeaders.CONTENT_TYPE, first.replace( "multipart/form-data;boundary=", "multipart/form-data; boundary=" ) );
+      }
+      */
     });
   }
 

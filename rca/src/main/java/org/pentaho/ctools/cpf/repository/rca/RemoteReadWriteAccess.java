@@ -19,14 +19,33 @@ import org.glassfish.jersey.media.multipart.FormDataMultiPart;
 import org.glassfish.jersey.media.multipart.MultiPart;
 import org.glassfish.jersey.media.multipart.MultiPartFeature;
 */
+import org.apache.cxf.jaxrs.client.WebClient;
+import org.apache.cxf.jaxrs.ext.multipart.Attachment;
+import org.apache.cxf.jaxrs.ext.multipart.ContentDisposition;
+import org.apache.cxf.jaxrs.ext.multipart.MultipartBody;
+import org.apache.cxf.jaxrs.impl.MetadataMap;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
+import org.apache.http.HttpResponse;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.entity.BufferedHttpEntity;
+import org.apache.http.entity.mime.HttpMultipartMode;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.impl.auth.BasicScheme;
+import org.apache.http.impl.client.BasicAuthCache;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.pentaho.ctools.cpf.repository.rca.dto.RepositoryFileDto;
 import org.pentaho.ctools.cpf.repository.rca.dto.StringKeyStringValueDto;
 import pt.webdetails.cpf.repository.api.IRWAccess;
 
 import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.GenericEntity;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import javax.ws.rs.core.*;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,12 +59,180 @@ public class RemoteReadWriteAccess extends RemoteReadAccess implements IRWAccess
     super(reposURL);
   }
 
+  public boolean saveFileApacheHTTP(String path, InputStream contents ) {
+    // split into folder and filename
+    int splitIndex = path.lastIndexOf('/');
+    String folder = splitIndex > 0 ? path.substring(0, splitIndex) : "/";
+    String filename = splitIndex > 0 ? path.substring(splitIndex + 1, path.length()) : null;
+
+    if ( filename == null || filename.isEmpty() ) {
+      throw new IllegalArgumentException( "Invalid path: " + path );
+    }
+
+    CredentialsProvider provider = new BasicCredentialsProvider();
+    UsernamePasswordCredentials credentials  = new UsernamePasswordCredentials("admin", "password");
+    provider.setCredentials(AuthScope.ANY, credentials);
+
+    HttpClient client = HttpClientBuilder.create().setDefaultCredentialsProvider(provider).build();
+
+    /* auth context */
+    HttpClientContext ctx = HttpClientContext.create();
+    ctx.setCredentialsProvider(provider);
+    ctx.setAuthCache(new BasicAuthCache());
+
+    HttpHost targetHost = new HttpHost("127.0.0.1", 8080);
+    ctx.getAuthCache().put(targetHost, new BasicScheme());
+    /* ---- */
+
+
+    HttpEntity entity = MultipartEntityBuilder
+        .create()
+        .setMode(HttpMultipartMode.BROWSER_COMPATIBLE)
+        .addTextBody("importDir", folder)
+        .addBinaryBody("fileUpload", contents)
+        .addTextBody("overwriteFile", "true")
+        .addTextBody("fileNameOverride", filename)
+        .build();
+
+    String address = reposURL + "/api/repo/files/import";
+    HttpPost httpPost = new HttpPost(address);
+    httpPost.setEntity(entity);
+
+    try {
+      HttpResponse response = client.execute(httpPost, ctx);
+      return response.getStatusLine().getStatusCode() == 200;
+      // TODO: change metadata so that file is not hidden!
+    }
+    catch (Exception ex) {
+      System.out.println(ex.getStackTrace());
+    }
+    return false;
+  }
+
+
+  Attachment formDataField(String field, String value) {
+    MultivaluedMap<String, String> headers =
+        new MetadataMap<String, String>(false, true);
+    headers.putSingle( HttpHeaders.CONTENT_DISPOSITION, "form-data; name=\"" + field + "\"" );
+    return new Attachment(headers, value);
+  }
+
+  public boolean saveFileCXF( String path, InputStream contents ) {
+    // split into folder and filename
+    int splitIndex = path.lastIndexOf('/');
+    String folder = splitIndex > 0 ? path.substring(0, splitIndex) : "/";
+    String filename = splitIndex > 0 ? path.substring(splitIndex + 1, path.length()) : null;
+
+    if ( filename == null || filename.isEmpty() ) {
+      throw new IllegalArgumentException( "Invalid path: " + path );
+    }
+
+    //
+    String address = reposURL + "/api/repo/files/import";
+    WebClient client = WebClient.create(address).header(HttpHeaders.AUTHORIZATION, "Basic YWRtaW46cGFzc3dvcmQ=");
+    client.type("multipart/form-data").accept("text/plain");
+
+    List<Attachment> atts = new ArrayList<>();
+
+    // importDir
+    atts.add(formDataField("importDir", folder));
+
+    // fileUpload
+    atts.add( new Attachment( "fileUpload", contents, new ContentDisposition( "form-data; name=\"fileUpload\"" ) ) );
+
+    // overwriteFile
+    atts.add(formDataField("overwriteFile", "true"));
+
+    // fileNameOverride
+    atts.add(formDataField("fileNameOverride", filename));
+
+    MultipartBody body = new MultipartBody(atts);
+
+    //Response response = client.post(body);
+    Response response = client.postCollection(atts, Attachment.class);
+
+    return response.getStatus() == Response.Status.OK.getStatusCode();
+  }
+
   @Override
   public boolean saveFile( String path, InputStream contents ) {
+    // split into folder and filename
+    int splitIndex = path.lastIndexOf('/');
+    String folder = splitIndex > 0 ? path.substring(0, splitIndex) : "/";
+    String filename = splitIndex > 0 ? path.substring(splitIndex + 1, path.length()) : null;
+
+    if ( filename == null || filename.isEmpty() ) {
+      throw new IllegalArgumentException( "Invalid path: " + path );
+    }
+
     // this endpoint requires a different encoding for paths
+    String requestURL = createRequestURL("/api/repo/files/import", "", null);
+
+    // create post data
     /*
-    String encodedPath = path.replaceAll( "/", "%2F" );
-    String requestURL = reposURL + "/api/repo/publish/file";
+    List<Attachment> atts = new ArrayList<>();
+    atts.add(new Attachment("importPath", MediaType.TEXT_PLAIN, encodedPath));
+    atts.add(new Attachment("fileUpload", contents, new ContentDisposition("form-data; name=\"fileUpload\"")));
+    atts.add(new Attachment("overwriteFile", MediaType.TEXT_PLAIN, encodedPath));
+
+    MultipartBody body = new MultipartBody(atts);
+
+    Variant var = new Variant();*/
+
+    String boundary = "------------------------d74496d66958873e";
+    String CRLF = "\r\n";
+
+    StringBuilder builder = new StringBuilder();
+
+    // importPath
+    builder.append(boundary);
+    builder.append(CRLF);
+    builder.append("Content-Disposition: form-data; name=\"importDir\"");
+    builder.append(CRLF);
+    builder.append(CRLF);
+    builder.append(folder);
+
+    // file upload
+    builder.append(CRLF);
+    builder.append(boundary);
+    builder.append(CRLF);
+    builder.append("Content-Disposition: form-data; name=\"fileUpload\"");
+    builder.append(CRLF);
+    builder.append(CRLF);
+    builder.append("dummy-to-be-completed"); // TODO
+
+    // overwriteFile
+    builder.append(CRLF);
+    builder.append(boundary);
+    builder.append(CRLF);
+    builder.append("Content-Disposition: form-data; name=\"overwriteFile\"");
+    builder.append(CRLF);
+    builder.append(CRLF);
+    builder.append("true");
+
+    // fileNameOverride
+    builder.append(CRLF);
+    builder.append(boundary);
+    builder.append(CRLF);
+    builder.append("Content-Disposition: form-data; name=\"fileNameOverride\"");
+    builder.append(CRLF);
+    builder.append(CRLF);
+    builder.append(filename);
+
+    // end multipart
+    builder.append(CRLF);
+    builder.append(boundary);
+    builder.append("--");
+    builder.append(CRLF);
+
+    String body = builder.toString();
+
+    Response response = client.target( requestURL )
+        .request()
+        .post(Entity.entity(body, "multipart/form-data; boundary=" + boundary)); /* TODO: check what gets sent */
+
+    /*
+
 
     FormDataMultiPart form = new FormDataMultiPart();
     form.field( "importPath", encodedPath );
@@ -54,13 +241,13 @@ public class RemoteReadWriteAccess extends RemoteReadAccess implements IRWAccess
 
     Response response = client.register(MultiPartFeature.class)
         .target( requestURL )
-        .request(MediaType.MULTIPART_FORM_DATA)
+        .request()
         .post(Entity.entity((MultiPart) form, MediaType.MULTIPART_FORM_DATA_TYPE), Response.class);
 
     //TODO: handle non-OK status codes? log? exception?
     return response.getStatus() == Response.Status.OK.getStatusCode();
     */
-    return false;
+    return response.getStatus() == Response.Status.OK.getStatusCode();
   }
 
   @Override
@@ -146,7 +333,9 @@ public class RemoteReadWriteAccess extends RemoteReadAccess implements IRWAccess
     //copyFile("/home/admin/cpf/index.html", "/home/admin/cpf/copy.html");
     try {
       FileInputStream inputStream = new FileInputStream("C:\\Users\\amartins\\Documents\\sprint_work\\BACKLOG-24375\\teste\\index.html");
-      saveFile("/home/admin/cpf/copy.html", inputStream);
+      //saveFile("/home/admin/cpf/copy.html", inputStream);
+      //saveFileCXF("/home/admin/cpf/copy.html", inputStream);
+      saveFileApacheHTTP("/home/admin/cpf/copy.html", inputStream);
     } catch ( IOException ex ) {
       System.out.println(ex.getStackTrace());
     }
