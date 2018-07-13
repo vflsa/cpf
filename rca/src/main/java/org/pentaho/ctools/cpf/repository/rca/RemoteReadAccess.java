@@ -45,31 +45,35 @@ public class RemoteReadAccess implements IReadAccess {
 
   public RemoteReadAccess( String reposURL ) {
     this.reposURL = reposURL;
-    client = ClientBuilder.newClient().register((ClientRequestFilter) requestContext -> {
-      String username = "admin";
-      String password = "password";
-      byte[] passwordBytes = password.getBytes();
+    client = ClientBuilder.newClient()
+        // Register Authentication provider
+        .register((ClientRequestFilter) requestContext -> {
+          String username = "admin";
+          String password = "password";
+          byte[] passwordBytes = password.getBytes();
 
-      Charset CHARACTER_SET = Charset.forName("iso-8859-1");
-      final byte[] prefix = (username + ":").getBytes(CHARACTER_SET);
-      final byte[] usernamePassword = new byte[prefix.length + passwordBytes.length];
+          Charset CHARACTER_SET = Charset.forName("iso-8859-1");
+          final byte[] prefix = (username + ":").getBytes(CHARACTER_SET);
+          final byte[] usernamePassword = new byte[prefix.length + passwordBytes.length];
 
-      System.arraycopy(prefix, 0, usernamePassword, 0, prefix.length);
-      System.arraycopy(passwordBytes, 0, usernamePassword, prefix.length, passwordBytes.length);
+          System.arraycopy(prefix, 0, usernamePassword, 0, prefix.length);
+          System.arraycopy(passwordBytes, 0, usernamePassword, prefix.length, passwordBytes.length);
 
-      String authentication = "Basic " + new String(Base64.getEncoder().encode(usernamePassword), "ASCII");
-      requestContext.getHeaders().add(HttpHeaders.AUTHORIZATION, authentication);
+          String authentication = "Basic " + new String(Base64.getEncoder().encode(usernamePassword), "ASCII");
+          requestContext.getHeaders().add(HttpHeaders.AUTHORIZATION, authentication);
 
-      // fix boundary
-      /*
-      List<Object> headers = requestContext.getHeaders().get(HttpHeaders.CONTENT_TYPE);
-      String first = (String) headers.get(0);
-      if ( first != null && first.contains("multipart/form-data;boundary=") ) {
-        requestContext.getHeaders().remove(HttpHeaders.CONTENT_TYPE);
-        requestContext.getHeaders().add(HttpHeaders.CONTENT_TYPE, first.replace( "multipart/form-data;boundary=", "multipart/form-data; boundary=" ) );
-      }
-      */
-    });
+          // fix boundary
+          /*
+          List<Object> headers = requestContext.getHeaders().get(HttpHeaders.CONTENT_TYPE);
+          String first = (String) headers.get(0);
+          if ( first != null && first.contains("multipart/form-data;boundary=") ) {
+            requestContext.getHeaders().remove(HttpHeaders.CONTENT_TYPE);
+            requestContext.getHeaders().add(HttpHeaders.CONTENT_TYPE, first.replace( "multipart/form-data;boundary=", "multipart/form-data; boundary=" ) );
+          }
+          */
+        })
+        // Register ImportMessage MessageBodyWriter
+        .register(org.pentaho.ctools.cpf.repository.rca.ImportMessageBodyWriter.class);
   }
 
   @Override

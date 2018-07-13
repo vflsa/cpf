@@ -166,8 +166,8 @@ public class RemoteReadWriteAccess extends RemoteReadAccess implements IRWAccess
     }
 
     // this endpoint requires a different encoding for paths
-    String requestURL = createRequestURL("/api/repo/files/import", "", null);
-
+    //String requestURL = createRequestURL("/api/repo/files/import", "", null);
+    String requestURL = reposURL + "/api/repo/files/import";
     // create post data
     /*
     List<Attachment> atts = new ArrayList<>();
@@ -227,10 +227,15 @@ public class RemoteReadWriteAccess extends RemoteReadAccess implements IRWAccess
 
     String body = builder.toString();
 
+    /*
     Response response = client.target( requestURL )
         .request()
         .post(Entity.entity(body, "multipart/form-data; boundary=" + boundary)); /* TODO: check what gets sent */
 
+
+    Response response = client.target( requestURL )
+        .request()
+        .post(Entity.entity(new ImportMessage(folder, filename, contents, true), "multipart/form-data"));
     /*
 
 
@@ -333,9 +338,9 @@ public class RemoteReadWriteAccess extends RemoteReadAccess implements IRWAccess
     //copyFile("/home/admin/cpf/index.html", "/home/admin/cpf/copy.html");
     try {
       FileInputStream inputStream = new FileInputStream("C:\\Users\\amartins\\Documents\\sprint_work\\BACKLOG-24375\\teste\\index.html");
-      //saveFile("/home/admin/cpf/copy.html", inputStream);
+      saveFile("/home/admin/cpf/copy.html", inputStream);
       //saveFileCXF("/home/admin/cpf/copy.html", inputStream);
-      saveFileApacheHTTP("/home/admin/cpf/copy.html", inputStream);
+      //saveFileApacheHTTP("/home/admin/cpf/copy.html", inputStream);
     } catch ( IOException ex ) {
       System.out.println(ex.getStackTrace());
     }
