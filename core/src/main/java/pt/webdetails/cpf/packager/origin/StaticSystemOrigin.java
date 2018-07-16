@@ -21,7 +21,8 @@ public class StaticSystemOrigin extends PathOrigin {
   }
 
   public String getUrl( String path, IUrlProvider urlProvider ) {
-    return RepositoryHelper.joinPaths( urlProvider.getPluginStaticBaseUrl(), basePath, path );
+    String pluginStaticBaseUrl = urlProvider != null ? urlProvider.getPluginStaticBaseUrl() : "";
+    return RepositoryHelper.joinPaths( pluginStaticBaseUrl, basePath, path );
   }
 
   public IReadAccess getReader( IContentAccessFactory factory ) {
