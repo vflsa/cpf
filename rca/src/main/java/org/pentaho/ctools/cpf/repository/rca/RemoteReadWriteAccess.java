@@ -56,10 +56,34 @@ public class RemoteReadWriteAccess extends RemoteReadAccess implements IRWAccess
         .request()
         .post(Entity.entity(new ImportMessage(folder, filename, contents, true), "multipart/form-data"));
 
-    //TODO: file is set as "hidden" in the repository
+    if ( response.getStatus() != Response.Status.OK.getStatusCode() ) {
+      //TODO: handle non-OK status codes? log? exception?
+      return false;
+    }
 
-    //TODO: handle non-OK status codes? log? exception?
-    return response.getStatus() == Response.Status.OK.getStatusCode();
+    // make file not hidden
+    StringKeyStringValueDto hiddenMeta = new StringKeyStringValueDto();
+    hiddenMeta.setKey("_PERM_HIDDEN");
+    hiddenMeta.setValue("false");
+
+    List<StringKeyStringValueDto> metadata = new ArrayList<>();
+    metadata.add(hiddenMeta);
+
+    requestURL = createRequestURL(path, "metadata");
+    GenericEntity<List<StringKeyStringValueDto>> entity = new GenericEntity<List<StringKeyStringValueDto>>(metadata)
+    {
+    };
+    response = client.target(requestURL)
+        .request(MediaType.APPLICATION_XML)
+        .put(Entity.xml(entity));
+
+    // TODO: handle non-OK status codes? log? exceptions?
+    if ( response.getStatus() == Response.Status.OK.getStatusCode() )
+    {
+      return true;
+    }
+    logger.error( "Failed to set _PERM_HIDDEN=false for: " + path );
+    return false;
   }
 
   @Override
