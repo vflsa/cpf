@@ -14,18 +14,12 @@ package org.pentaho.ctools.cpf.repository.rca;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.cxf.jaxrs.client.WebClient;
-import org.apache.cxf.jaxrs.ext.multipart.Attachment;
-import org.apache.cxf.jaxrs.ext.multipart.ContentDisposition;
-import org.apache.cxf.jaxrs.ext.multipart.MultipartBody;
-import org.apache.cxf.jaxrs.impl.MetadataMap;
 import org.pentaho.ctools.cpf.repository.rca.dto.RepositoryFileDto;
 import org.pentaho.ctools.cpf.repository.rca.dto.StringKeyStringValueDto;
 import pt.webdetails.cpf.repository.api.IRWAccess;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.*;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
