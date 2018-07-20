@@ -14,7 +14,6 @@ package org.pentaho.ctools.cpf.repository.bundle;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.pentaho.ctools.cpf.repository.factory.ContentAccessFactory;
 import pt.webdetails.cpf.repository.api.IBasicFile;
 import pt.webdetails.cpf.repository.api.IBasicFileFilter;
 import pt.webdetails.cpf.repository.api.IRWAccess;
@@ -34,7 +33,7 @@ import java.util.List;
  */
 public class DummyReadWriteAccess implements IReadAccess, IRWAccess {
   IReadAccess readAccess;
-  private static final Log logger = LogFactory.getLog( ContentAccessFactory.class );
+  private static final Log logger = LogFactory.getLog( DummyReadWriteAccess.class );
 
   public DummyReadWriteAccess( IReadAccess readAccess ) {
     this.readAccess = readAccess;
