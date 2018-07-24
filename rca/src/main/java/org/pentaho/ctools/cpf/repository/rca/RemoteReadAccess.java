@@ -12,6 +12,8 @@
  */
 package org.pentaho.ctools.cpf.repository.rca;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.pentaho.ctools.cpf.repository.rca.dto.RepositoryFileDto;
 import org.pentaho.ctools.cpf.repository.rca.dto.RepositoryFileTreeDto;
 import pt.webdetails.cpf.repository.api.IBasicFile;
@@ -38,7 +40,7 @@ import java.util.List;
  */
 public class RemoteReadAccess implements IReadAccess {
   Client client;
-
+  private static final Log logger = LogFactory.getLog( RemoteReadAccess.class );
   String reposURL;
   private static final String DEFAULT_PATH_SEPARATOR = "/";
 
@@ -116,8 +118,13 @@ public class RemoteReadAccess implements IReadAccess {
     */
 
     // GET
-    RepositoryFileTreeDto response = target.request( MediaType.APPLICATION_XML ).get( RepositoryFileTreeDto.class );
-
+    RepositoryFileTreeDto response = null;
+    try {
+      response = target.request( MediaType.APPLICATION_XML ).get( RepositoryFileTreeDto.class );
+    } catch ( Exception ex ) {
+      logger.error( ex );
+      return null;
+    }
     if ( response == null ) {
       return null;
     }
