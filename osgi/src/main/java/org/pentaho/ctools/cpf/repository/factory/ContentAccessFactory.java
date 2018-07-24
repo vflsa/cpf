@@ -22,10 +22,11 @@ import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.pentaho.ctools.cpf.repository.utils.*;
-import pt.webdetails.cpf.repository.api.IContentAccessFactory;
+import pt.webdetails.cpf.api.IContentAccessFactoryExtended;
+import pt.webdetails.cpf.api.IUserContentAccessExtended;
 import pt.webdetails.cpf.repository.api.IReadAccess;
 import pt.webdetails.cpf.repository.api.IRWAccess;
-import pt.webdetails.cpf.repository.api.IUserContentAccess;
+
 
 /**
  * The {@code ContentAccessFactory} class creates repository access providers for basic plugin needs.
@@ -41,17 +42,17 @@ import pt.webdetails.cpf.repository.api.IUserContentAccess;
  *
  * Note: PluginRepository write access is currently not supported.
  *
- * @see IContentAccessFactory
- * @see IUserContentAccess
+ * @see IContentAccessFactoryExtended
+ * @see IUserContentAccessExtended
  * @see IReadAccess
  * @see IRWAccess
  */
-public final class ContentAccessFactory implements IContentAccessFactory {
+public final class ContentAccessFactory implements IContentAccessFactoryExtended {
   private static final Log logger = LogFactory.getLog( ContentAccessFactory.class );
   private static final String PLUGIN_REPOS_NAMESPACE = "repos";
   private static final String PLUGIN_SYSTEM_NAMESPACE = "system";
   private List<IReadAccess> readAccesses = new ArrayList<>();
-  private IUserContentAccess userContentAccess = null;
+  private IUserContentAccessExtended userContentAccess = null;
   private final String volumePath;
   private final String parentPluginId;
   private final FileSystem storageFilesystem = FileSystems.getDefault();
@@ -63,11 +64,11 @@ public final class ContentAccessFactory implements IContentAccessFactory {
     this.readAccesses.remove( readAccess );
   }
 
-  public void setUserContentAccess( IUserContentAccess userContentAccess ) {
+  public void setUserContentAccess( IUserContentAccessExtended userContentAccess ) {
     this.userContentAccess = userContentAccess;
   }
 
-  public void removeUserContentAccess( IUserContentAccess userContentAccess ) {
+  public void removeUserContentAccess( IUserContentAccessExtended userContentAccess ) {
     this.userContentAccess = null;
   }
 
@@ -82,7 +83,7 @@ public final class ContentAccessFactory implements IContentAccessFactory {
   }
 
   @Override
-  public IUserContentAccess getUserContentAccess( String path ) {
+  public IUserContentAccessExtended getUserContentAccess( String path ) {
     //TODO: allow overlays of UCAs
     return userContentAccess;
   }

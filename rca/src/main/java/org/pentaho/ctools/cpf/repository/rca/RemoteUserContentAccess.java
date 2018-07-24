@@ -12,10 +12,17 @@
  */
 package org.pentaho.ctools.cpf.repository.rca;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import pt.webdetails.cpf.api.IFileContent;
+import pt.webdetails.cpf.api.IUserContentAccessExtended;
 import pt.webdetails.cpf.repository.api.FileAccess;
-import pt.webdetails.cpf.repository.api.IUserContentAccess;
 
-public class RemoteUserContentAccess extends RemoteReadWriteAccess implements IUserContentAccess {
+import java.io.IOException;
+
+public class RemoteUserContentAccess extends RemoteReadWriteAccess implements IUserContentAccessExtended {
+
+  private static final Log logger = LogFactory.getLog( RemoteReadWriteAccess.class );
 
   public RemoteUserContentAccess( String reposURL, String username, String password ) {
     super( reposURL, username, password );
@@ -25,5 +32,16 @@ public class RemoteUserContentAccess extends RemoteReadWriteAccess implements IU
   public boolean hasAccess( String filePath, FileAccess access ) {
     //TODO: dummy implementation
     return fileExists( filePath );
+  }
+
+  @Override
+  public boolean saveFile( IFileContent file ) {
+    //TODO: dummy implementation
+    try {
+      return saveFile( file.getPath(), file.getContents() );
+    } catch ( IOException ex ) {
+      logger.error( ex );
+      return false;
+    }
   }
 }
