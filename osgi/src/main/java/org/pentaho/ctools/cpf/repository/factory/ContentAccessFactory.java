@@ -21,8 +21,6 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.pentaho.ctools.cpf.repository.bundle.ReadAccessProxy;
-import org.pentaho.ctools.cpf.repository.bundle.UserContentAccess;
 import org.pentaho.ctools.cpf.repository.utils.*;
 import pt.webdetails.cpf.repository.api.IContentAccessFactory;
 import pt.webdetails.cpf.repository.api.IReadAccess;
@@ -53,7 +51,7 @@ public final class ContentAccessFactory implements IContentAccessFactory {
   private static final String PLUGIN_REPOS_NAMESPACE = "repos";
   private static final String PLUGIN_SYSTEM_NAMESPACE = "system";
   private List<IReadAccess> readAccesses = new ArrayList<>();
-  private IRWAccess readWriteAccess = null;
+  private IUserContentAccess userContentAccess = null;
   private final String volumePath = "c:/data/tmp/"; //TODO: get from parameter
   private final String parentPluginId = "pentaho-cde-dd"; //TODO: get from parameter
   private final FileSystem storageFilesystem = FileSystems.getDefault();
@@ -65,17 +63,18 @@ public final class ContentAccessFactory implements IContentAccessFactory {
     this.readAccesses.remove( readAccess );
   }
 
-  public void setReadWriteAccess( IRWAccess readWriteAccess ) {
-    this.readWriteAccess = readWriteAccess;
+  public void setUserContentAccess( IUserContentAccess userContentAccess ) {
+    this.userContentAccess = userContentAccess;
   }
-  public void removeReadWriteAccess( IRWAccess readWriteAccess ) {
-    this.readWriteAccess = null;
+
+  public void removeUserContentAccess( IUserContentAccess userContentAccess ) {
+    this.userContentAccess = null;
   }
 
   @Override
   public IUserContentAccess getUserContentAccess( String path ) {
-    IReadAccess readAccess = this.getReadAccessProxy( path );
-    return new UserContentAccess( readAccess, readWriteAccess );
+    //TODO: allow overlays of UCAs
+    return userContentAccess;
   }
 
   @Override
@@ -114,22 +113,22 @@ public final class ContentAccessFactory implements IContentAccessFactory {
 
   private IRWAccess getPluginRepositoryOverlay( String basePath ) {
     // implemented as a filesystem folder on foundry, as it is a storage area common to all users
-    String storagePath = createStoragePath( PLUGIN_REPOS_NAMESPACE, basePath );
+    String storagePath = createStoragePath( PLUGIN_REPOS_NAMESPACE );
     return new FileSystemRWAccess( FileSystems.getDefault(), storagePath, basePath );
   }
 
   private IRWAccess getPluginSystemOverlay( String pluginId, String basePath ) {
     // combine read-write via filesystem storage with bundle supplied read-only assets
-    String storagePath = createStoragePath( PLUGIN_SYSTEM_NAMESPACE, pluginId, basePath );
+    String storagePath = createStoragePath( PLUGIN_SYSTEM_NAMESPACE, pluginId );
     IRWAccess fileSystemWriter = new FileSystemRWAccess( FileSystems.getDefault(), storagePath, null );
     return new OverlayRWAccess( basePath, fileSystemWriter, readAccesses );
   }
 
-  private String createStoragePath( String namespace, String basePath ) {
-    return createStoragePath( namespace, null, basePath );
+  private String createStoragePath( String namespace ) {
+    return createStoragePath( namespace, null );
   }
 
-  private String createStoragePath( String namespace, String id, String basePath ) {
+  private String createStoragePath( String namespace, String id ) {
     // TODO: validate that basePath does not cross back the namespace boundary
     Path storagePath =  id != null ? storageFilesystem.getPath( volumePath, namespace, id ) : storageFilesystem.getPath( volumePath, namespace );
     File storage = storagePath.toFile();
@@ -139,10 +138,6 @@ public final class ContentAccessFactory implements IContentAccessFactory {
     if ( !storage.exists() ) {
       storage.mkdirs();
     }
-    return storagePath.resolve( basePath ).toString();
-  }
-
-  private IReadAccess getReadAccessProxy( String path ) {
-    return new ReadAccessProxy( this.readAccesses, path );
+    return storagePath.toString();
   }
 }

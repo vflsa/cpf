@@ -8,6 +8,14 @@
     <!-- Load system property -->
     <ext:property-placeholder />
 
+    <bean id="remoteUserContentAccess" class="org.pentaho.ctools.cpf.repository.rca.RemoteUserContentAccess">
+        <argument value="${repos.url}"/>
+        <argument value="${repos.user}"/>
+        <argument value="${repos.password}"/>
+    </bean>
+    <service interface="pt.webdetails.cpf.repository.api.IUserContentAccess" ref="remoteUserContentAccess"/>
+
+    <!--
   <bean id="remoteReadAccess" class="org.pentaho.ctools.cpf.repository.rca.RemoteReadAccess">
       <argument value="${repos.url}"/>
       <argument value="${repos.user}"/>
@@ -21,7 +29,7 @@
       <argument value="${repos.password}"/>
   </bean>
   <service interface="pt.webdetails.cpf.repository.api.IRWAccess" ref="remoteReadWriteAccess"/>
-
+-->
 <!--
   <bean id="remoteReadWriteAccess" class="org.pentaho.ctools.cpf.repository.rca.RemoteReadWriteAccess">
       <argument value="${repos.url}"/>
