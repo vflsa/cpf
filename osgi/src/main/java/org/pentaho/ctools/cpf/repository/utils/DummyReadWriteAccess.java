@@ -10,7 +10,7 @@
  * basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. Please refer to
  * the license for the specific language governing your rights and limitations.
  */
-package org.pentaho.ctools.cpf.repository.bundle;
+package org.pentaho.ctools.cpf.repository.utils;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;

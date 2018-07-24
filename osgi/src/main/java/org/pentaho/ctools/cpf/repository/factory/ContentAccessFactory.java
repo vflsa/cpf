@@ -12,14 +12,18 @@
  */
 package org.pentaho.ctools.cpf.repository.factory;
 
+import java.io.File;
+import java.nio.file.FileSystems;
+import java.nio.file.FileSystem;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.pentaho.ctools.cpf.repository.bundle.DummyReadWriteAccess;
 import org.pentaho.ctools.cpf.repository.bundle.ReadAccessProxy;
 import org.pentaho.ctools.cpf.repository.bundle.UserContentAccess;
+import org.pentaho.ctools.cpf.repository.utils.*;
 import pt.webdetails.cpf.repository.api.IContentAccessFactory;
 import pt.webdetails.cpf.repository.api.IReadAccess;
 import pt.webdetails.cpf.repository.api.IRWAccess;
@@ -46,8 +50,13 @@ import pt.webdetails.cpf.repository.api.IUserContentAccess;
  */
 public final class ContentAccessFactory implements IContentAccessFactory {
   private static final Log logger = LogFactory.getLog( ContentAccessFactory.class );
+  private static final String PLUGIN_REPOS_NAMESPACE = "repos";
+  private static final String PLUGIN_SYSTEM_NAMESPACE = "system";
   private List<IReadAccess> readAccesses = new ArrayList<>();
   private IRWAccess readWriteAccess = null;
+  private final String volumePath = "c:/data/tmp/"; //TODO: get from parameter
+  private final String parentPluginId = "pentaho-cde-dd"; //TODO: get from parameter
+  private final FileSystem storageFilesystem = FileSystems.getDefault();
 
   public void addReadAccess( IReadAccess readAccess ) {
     this.readAccesses.add( readAccess );
@@ -70,36 +79,67 @@ public final class ContentAccessFactory implements IContentAccessFactory {
   }
 
   @Override
-  public IReadAccess getPluginRepositoryReader( String path ) {
-    return this.getReadAccessProxy( path );
+  public IReadAccess getPluginRepositoryReader( String basePath ) {
+    logger.info( "RO FileSystemOverlay for: " + basePath );
+    return getPluginRepositoryOverlay( basePath );
   }
 
   @Override
   public IRWAccess getPluginRepositoryWriter( String basePath ) {
-    logger.fatal( "Not implemented for the OSGi environment" );
-    return null;
+    logger.info( "RO FileSystemOverlay for: " + basePath );
+    return getPluginRepositoryOverlay( basePath );
   }
 
   @Override
-  public IReadAccess getPluginSystemReader( String path ) {
-    return this.getReadAccessProxy( path );
+  public IReadAccess getPluginSystemReader( String basePath ) {
+    return getOtherPluginSystemReader( parentPluginId, basePath );
   }
 
   @Override
   public IRWAccess getPluginSystemWriter( String basePath ) {
-    logger.info( "Using dummy writer for the OSGi environment" );
-    return new DummyReadWriteAccess( this.getReadAccessProxy( basePath ) );
+    return getOtherPluginSystemWriter( parentPluginId, basePath );
   }
 
   @Override
-  public IReadAccess getOtherPluginSystemReader( String pluginId, String path ) {
-    return this.getReadAccessProxy( path );
+  public IReadAccess getOtherPluginSystemReader( String pluginId, String basePath ) {
+    logger.info( "RO FileSystemOverlay for <" + pluginId + ">: " + basePath );
+    return getPluginSystemOverlay( pluginId, basePath );
   }
 
   @Override
   public IRWAccess getOtherPluginSystemWriter( String pluginId, String basePath ) {
-    logger.info( "Using dummy writer for the OSGi environment" );
-    return new DummyReadWriteAccess( this.getReadAccessProxy( basePath ) );
+    logger.info( "RW FileSystemOverlay for <" + pluginId + ">: " + basePath );
+    return getPluginSystemOverlay( pluginId, basePath );
+  }
+
+  private IRWAccess getPluginRepositoryOverlay( String basePath ) {
+    // implemented as a filesystem folder on foundry, as it is a storage area common to all users
+    String storagePath = createStoragePath( PLUGIN_REPOS_NAMESPACE, basePath );
+    return new FileSystemRWAccess( FileSystems.getDefault(), storagePath, basePath );
+  }
+
+  private IRWAccess getPluginSystemOverlay( String pluginId, String basePath ) {
+    // combine read-write via filesystem storage with bundle supplied read-only assets
+    String storagePath = createStoragePath( PLUGIN_SYSTEM_NAMESPACE, pluginId, basePath );
+    IRWAccess fileSystemWriter = new FileSystemRWAccess( FileSystems.getDefault(), storagePath, null );
+    return new OverlayRWAccess( basePath, fileSystemWriter, readAccesses );
+  }
+
+  private String createStoragePath( String namespace, String basePath ) {
+    return createStoragePath( namespace, null, basePath );
+  }
+
+  private String createStoragePath( String namespace, String id, String basePath ) {
+    // TODO: validate that basePath does not cross back the namespace boundary
+    Path storagePath =  id != null ? storageFilesystem.getPath( volumePath, namespace, id ) : storageFilesystem.getPath( volumePath, namespace );
+    File storage = storagePath.toFile();
+    if ( storage.exists() && !storage.isDirectory() ) {
+      throw new IllegalStateException( "Expected path to be a directory: " + storagePath.toString() );
+    }
+    if ( !storage.exists() ) {
+      storage.mkdirs();
+    }
+    return storagePath.resolve( basePath ).toString();
   }
 
   private IReadAccess getReadAccessProxy( String path ) {
