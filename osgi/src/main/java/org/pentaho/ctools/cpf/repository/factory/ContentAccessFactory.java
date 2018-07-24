@@ -52,8 +52,8 @@ public final class ContentAccessFactory implements IContentAccessFactory {
   private static final String PLUGIN_SYSTEM_NAMESPACE = "system";
   private List<IReadAccess> readAccesses = new ArrayList<>();
   private IUserContentAccess userContentAccess = null;
-  private final String volumePath = "c:/data/tmp/"; //TODO: get from parameter
-  private final String parentPluginId = "pentaho-cde-dd"; //TODO: get from parameter
+  private final String volumePath;
+  private final String parentPluginId;
   private final FileSystem storageFilesystem = FileSystems.getDefault();
 
   public void addReadAccess( IReadAccess readAccess ) {
@@ -69,6 +69,16 @@ public final class ContentAccessFactory implements IContentAccessFactory {
 
   public void removeUserContentAccess( IUserContentAccess userContentAccess ) {
     this.userContentAccess = null;
+  }
+
+  public ContentAccessFactory( String parentPluginId ) {
+    this.volumePath = System.getProperty( "java.io.tmpdir" );
+    this.parentPluginId = parentPluginId;
+  }
+
+  public ContentAccessFactory(String volumePath, String parentPluginId) {
+    this.volumePath = volumePath;
+    this.parentPluginId = parentPluginId;
   }
 
   @Override
